@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSECRET 해외 진출 지도</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root {
+    --bg: #faf8f3; --card: #fffefb; --ink: #1d1d1b; --muted: #75736c; --line: #e7e3d9;
+    --ocean: #f3f1ea; --grat: #e9e6dc; --land: #dcd6c8; --border: #ffffff;
+    --s1: #2e7556; --s2: #8cc1a2; --s3: #d39b2f; --s4: #7c52a8; --home: #1d1d1b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font-family: Pretendard, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+  .card { margin: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px 14px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+  h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  h1 small { font-weight: 500; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pills button { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); cursor: pointer; }
+  .pills button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 600; }
+  .map { position: relative; margin-top: 10px; }
+  svg { width: 100%; height: auto; display: block; }
+  .country { stroke: var(--border); stroke-width: .5; vector-effect: non-scaling-stroke; transition: opacity .15s; }
+  .country.on:hover, .dot:hover { opacity: .75; cursor: pointer; }
+  .dot { stroke: #fff; stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .home { stroke: var(--home); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+  .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; line-height: 1.45;
+    padding: 7px 10px; border-radius: 8px; white-space: nowrap; opacity: 0; transform: translate(-50%, calc(-100% - 12px)); transition: opacity .1s; }
+  .tip b { font-weight: 700; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 12px; font-size: 12px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend b { font-weight: 700; margin-left: 2px; }
+  .list { margin-top: 10px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .list div b { color: var(--ink); font-weight: 600; margin-right: 6px; }
+  .msg { padding: 60px 0; text-align: center; color: var(--muted); font-size: 13px; }
+  @media (max-width: 560px) { .card { margin: 0; border-radius: 0; border-width: 0; padding: 14px 16px; } }
+</style>
+</head>
+<body>
+<div class="card">
+  <header>
+    <h1>해외 진출 현황<small id="sub">불러오는 중…</small></h1>
+    <div class="pills" id="pills"></div>
+  </header>
+  <div class="map" id="map"><div class="msg">지도를 불러오는 중…</div></div>
+  <div class="legend" id="legend"></div>
+  <div class="list" id="list"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script>
+// 데이터 원본: 구글시트 '지도_raw' 탭 (국가 | ISO3 | 권역 | 상태 | 비고, 기준일은 H1)
+const SHEET_ID = "123KpTAZmVN0d9cfxez07Or0kFTmVBSa2aMfcozmOuBw";
+const TAB = "지도_raw";
+const gviz = (range) => `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(TAB)}&range=${range}&t=${Date.now()}`;
+
+const STATUS = [
+  { key: "매출 발생",   color: "var(--s1)" },
+  { key: "거래선 등록", color: "var(--s2)" },
+  { key: "제품 등록 중", color: "var(--s3)" },
+  { key: "협의 중",     color: "var(--s4)" },
+];
+const REGIONS = ["전체", "유럽", "아시아", "CIS", "미주", "중동·아프리카", "오세아니아"];
+const HOME = "410"; // 대한민국 (본사)
+// ISO3 → ISO 숫자코드 (world-atlas id)
+const ISO = Object.fromEntries("AFG:4,ALB:8,DZA:12,ASM:16,AND:20,AGO:24,AIA:660,ATA:10,ATG:28,ARG:32,ARM:51,ABW:533,AUS:36,AUT:40,AZE:31,BHS:44,BHR:48,BGD:50,BRB:52,BLR:112,BEL:56,BLZ:84,BEN:204,BMU:60,BTN:64,BOL:68,BIH:70,BWA:72,BVT:74,BRA:76,IOT:86,BRN:96,BGR:100,BFA:854,BDI:108,KHM:116,CMR:120,CAN:124,CPV:132,CYM:136,CAF:140,TCD:148,CHL:152,CHN:156,CXR:162,CCK:166,COL:170,COM:174,COG:178,COD:180,COK:184,CRI:188,CIV:384,HRV:191,CUB:192,CYP:196,CZE:203,DNK:208,DJI:262,DMA:212,DOM:214,ECU:218,EGY:818,SLV:222,GNQ:226,ERI:232,EST:233,ETH:231,FLK:238,FRO:234,FJI:242,FIN:246,FRA:250,GUF:254,PYF:258,ATF:260,GAB:266,GMB:270,GEO:268,DEU:276,GHA:288,GIB:292,GRC:300,GRL:304,GRD:308,GLP:312,GUM:316,GTM:320,GIN:324,GNB:624,GUY:328,HTI:332,HMD:334,VAT:336,HND:340,HKG:344,HUN:348,ISL:352,IND:356,IDN:360,IRN:364,IRQ:368,IRL:372,ISR:376,ITA:380,JAM:388,JPN:392,JOR:400,KAZ:398,KEN:404,KIR:296,PRK:408,KOR:410,KWT:414,KGZ:417,LAO:418,LVA:428,LBN:422,LSO:426,LBR:430,LBY:434,LIE:438,LTU:440,LUX:442,MAC:446,MDG:450,MWI:454,MYS:458,MDV:462,MLI:466,MLT:470,MHL:584,MTQ:474,MRT:478,MUS:480,MYT:175,MEX:484,FSM:583,MDA:498,MCO:492,MNG:496,MSR:500,MAR:504,MOZ:508,MMR:104,NAM:516,NRU:520,NPL:524,NLD:528,NCL:540,NZL:554,NIC:558,NER:562,NGA:566,NIU:570,NFK:574,MNP:580,MKD:807,NOR:578,OMN:512,PAK:586,PLW:585,PSE:275,PAN:591,PNG:598,PRY:600,PER:604,PHL:608,PCN:612,POL:616,PRT:620,PRI:630,QAT:634,REU:638,ROU:642,RUS:643,RWA:646,SHN:654,KNA:659,LCA:662,SPM:666,VCT:670,WSM:882,SMR:674,STP:678,SAU:682,SEN:686,SYC:690,SLE:694,SGP:702,SVK:703,SVN:705,SLB:90,SOM:706,ZAF:710,SGS:239,ESP:724,LKA:144,SDN:729,SUR:740,SJM:744,SWZ:748,SWE:752,CHE:756,SYR:760,TWN:158,TJK:762,TZA:834,THA:764,TLS:626,TGO:768,TKL:772,TON:776,TTO:780,TUN:788,TUR:792,TKM:795,TCA:796,TUV:798,UGA:800,UKR:804,ARE:784,GBR:826,USA:840,UMI:581,URY:858,UZB:860,VUT:548,VEN:862,VNM:704,VGB:92,VIR:850,WLF:876,ESH:732,YEM:887,ZMB:894,ZWE:716,ALA:248,BES:535,CUW:531,GGY:831,IMN:833,JEY:832,MNE:499,BLM:652,MAF:663,SRB:688,SXM:534,SSD:728,XKK:983".split(",").map(s => { const [a, n] = s.split(":"); return [a, n.padStart(3, "0")]; }));
+// Natural Earth 분할 영역 → 소속국
+const ALIAS = { "Somaliland": "706", "N. Cyprus": "196" };
+
+const W = 960, H = 500;
+const projection = d3.geoNaturalEarth1();
+const path = d3.geoPath(projection);
+let region = "전체";
+
+Promise.all([
+  d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json"),
+  d3.text(gviz("A1:E400")).catch(() => d3.text(gviz("A1:E400"))), // 일시적 네트워크 오류 대비 1회 재시도
+  d3.text(gviz("H1")).catch(() => ""),
+]).then(([topo, csv, asof]) => {
+  const rows = d3.csvParseRows(csv).slice(1)
+    .map(([name, iso3, reg, status, note]) => ({ name: name.trim(), iso3: iso3.trim().toUpperCase(), region: reg.trim(), status: status.trim(), note: (note || "").trim() }))
+    .filter(r => r.name && r.iso3);
+  const byId = new Map();
+  const unmatched = [];
+  rows.forEach(r => ISO[r.iso3] ? byId.set(ISO[r.iso3], r) : unmatched.push(r.name));
+  if (unmatched.length) console.warn("ISO3 매칭 실패:", unmatched);
+
+  const date = d3.csvParseRows(asof)[0]?.[0];
+  document.getElementById("sub").textContent = `· KSECRET${date ? " · 기준일 " + date : ""}`;
+
+  const land = topojson.feature(topo, topo.objects.countries).features.filter(f => f.properties.name !== "Antarctica");
+  land.forEach(f => { f.key = f.id || ALIAS[f.properties.name]; f.row = byId.get(f.key); });
+  projection.fitExtent([[4, 4], [W - 4, H - 4]], { type: "Sphere" });
+
+  const colorOf = (s) => (STATUS.find(x => x.key === s) || {}).color || "var(--land)";
+  const host = document.getElementById("map");
+  host.innerHTML = "";
+  const svg = d3.select(host).append("svg").attr("viewBox", `0 0 ${W} ${H}`).attr("role", "img").attr("aria-label", "해외 진출 국가 세계지도");
+  const g = svg.append("g");
+  g.append("path").datum({ type: "Sphere" }).attr("d", path).attr("fill", "var(--ocean)");
+  g.append("path").datum(d3.geoGraticule10()).attr("d", path).attr("fill", "none").attr("stroke", "var(--grat)").attr("stroke-width", .5).attr("vector-effect", "non-scaling-stroke");
+
+  g.selectAll(".country").data(land).join("path")
+    .attr("class", d => "country" + (d.row ? " on" : "") + (d.key === HOME ? " home" : ""))
+    .attr("d", path)
+    .attr("fill", d => d.key === HOME ? "#fff" : d.row ? colorOf(d.row.status) : "var(--land)");
+
+  // 면적이 너무 작은 진출국은 점으로 표시
+  const small = land.filter(d => d.row && path.area(d) < 6);
+  g.selectAll(".dot").data(small).join("circle")
+    .attr("class", "dot").attr("r", 3.2)
+    .attr("cx", d => projection(d3.geoCentroid(d))[0]).attr("cy", d => projection(d3.geoCentroid(d))[1])
+    .attr("fill", d => colorOf(d.row.status));
+
+  // 툴팁
+  const tip = d3.select(host).append("div").attr("class", "tip");
+  g.selectAll(".country.on, .dot")
+    .on("mousemove", (e, d) => {
+      const [x, y] = d3.pointer(e, host);
+      tip.style("left", x + "px").style("top", y + "px").style("opacity", 1)
+        .html(`<b>${d.row.name}</b> · ${d.row.status}${d.row.note ? "<br>" + d.row.note : ""}`);
+    })
+    .on("mouseleave", () => tip.style("opacity", 0));
+
+  // 범례 (현재 권역 기준 개수)
+  function legend() {
+    const inReg = rows.filter(r => region === "전체" || r.region === region);
+    const count = d3.rollup(inReg, v => v.length, r => r.status);
+    document.getElementById("legend").innerHTML =
+      STATUS.map(s => `<span><i style="background:${s.color}"></i>${s.key}<b>${count.get(s.key) || 0}</b></span>`).join("") +
+      `<span><i style="background:var(--land)"></i>미진출</span><span><i style="background:#fff;border:1.4px solid var(--home)"></i>본사(한국)</span>`;
+    document.getElementById("list").innerHTML = STATUS.filter(s => count.get(s.key))
+      .map(s => `<div><b>${s.key}</b>${inReg.filter(r => r.status === s.key).map(r => r.name).join(", ")}</div>`).join("");
+  }
+
+  // 권역 줌
+  function zoomTo(reg) {
+    region = reg;
+    d3.selectAll("#pills button").attr("aria-pressed", b => b === reg);
+    let k = 1, tx = 0, ty = 0;
+    if (reg !== "전체") {
+      // 해외 영토(프랑스령 기아나, 알래스카 등)에 끌려가지 않도록 국가별 가장 큰 폴리곤만으로 범위 계산
+      const main = d => d.geometry.type !== "MultiPolygon" ? d.geometry :
+        { type: "Polygon", coordinates: d3.greatest(d.geometry.coordinates, c => d3.geoArea({ type: "Polygon", coordinates: c })) };
+      const feats = land.filter(d => d.row && d.row.region === reg).map(main);
+      if (!feats.length) { region = reg; legend(); return; }
+      const [[x0, y0], [x1, y1]] = path.bounds({ type: "GeometryCollection", geometries: feats });
+      k = Math.min(8, 0.85 / Math.max((x1 - x0) / W, (y1 - y0) / H));
+      tx = W / 2 - k * (x0 + x1) / 2; ty = H / 2 - k * (y0 + y1) / 2;
+    }
+    g.transition().duration(650).attr("transform", `translate(${tx},${ty}) scale(${k})`);
+    g.selectAll(".dot").transition().duration(650).attr("r", 3.2 / Math.sqrt(k));
+    legend();
+  }
+  d3.select("#pills").selectAll("button").data(REGIONS).join("button").text(d => d).on("click", (e, d) => zoomTo(d));
+  zoomTo("전체");
+}).catch(err => {
+  console.error(err);
+  document.getElementById("map").innerHTML = '<div class="msg">데이터를 불러오지 못했습니다. 시트 공유 설정(링크가 있는 모든 사용자 보기)을 확인해 주세요.</div>';
+});
+</script>
+</body>
+</html>
