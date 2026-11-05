@@ -9,7 +9,8 @@
   :root {
     --bg: #faf8f3; --card: #fffefb; --ink: #1d1d1b; --muted: #75736c; --line: #e7e3d9;
     --ocean: #f3f1ea; --grat: #e9e6dc; --land: #dcd6c8; --border: #ffffff;
-    --s1: #a6192e; /* Pantone 187 C */ --s2: #e3a1ab; --s3: #d39b2f; --s4: #7c52a8; --home: #1d1d1b;
+    /* Pantone 187 C 기준 단계별 명도: 매출 발생 > 거래선 등록 > 제품 등록 중 > 협의 중 */
+    --s1: #a6192e; --s2: #d4636f; --s3: #eaa3ab; --s4: #f6d3d7; --home: #1d1d1b;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink);
@@ -29,7 +30,7 @@
   .map { position: relative; margin-top: 10px; }
   svg { width: 100%; height: auto; display: block; }
   .country { stroke: var(--border); stroke-width: .5; vector-effect: non-scaling-stroke; transition: opacity .15s; }
-  .country.on:hover, .dot:hover { opacity: .75; cursor: pointer; }
+  .country:hover, .dot:hover { opacity: .75; cursor: pointer; }
   .dot { stroke: #fff; stroke-width: 1; vector-effect: non-scaling-stroke; }
   .home { stroke: var(--home); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
   .label { fill: var(--ink); font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none;
@@ -78,7 +79,11 @@ const STATUS = [
 const REGIONS = ["전체", "유럽", "아시아", "CIS", "미주", "중동·아프리카", "오세아니아"];
 const HOME = "410"; // 대한민국 (본사)
 // ISO3 → ISO 숫자코드 (world-atlas id)
-const ISO = Object.fromEntries("AFG:4,ALB:8,DZA:12,ASM:16,AND:20,AGO:24,AIA:660,ATA:10,ATG:28,ARG:32,ARM:51,ABW:533,AUS:36,AUT:40,AZE:31,BHS:44,BHR:48,BGD:50,BRB:52,BLR:112,BEL:56,BLZ:84,BEN:204,BMU:60,BTN:64,BOL:68,BIH:70,BWA:72,BVT:74,BRA:76,IOT:86,BRN:96,BGR:100,BFA:854,BDI:108,KHM:116,CMR:120,CAN:124,CPV:132,CYM:136,CAF:140,TCD:148,CHL:152,CHN:156,CXR:162,CCK:166,COL:170,COM:174,COG:178,COD:180,COK:184,CRI:188,CIV:384,HRV:191,CUB:192,CYP:196,CZE:203,DNK:208,DJI:262,DMA:212,DOM:214,ECU:218,EGY:818,SLV:222,GNQ:226,ERI:232,EST:233,ETH:231,FLK:238,FRO:234,FJI:242,FIN:246,FRA:250,GUF:254,PYF:258,ATF:260,GAB:266,GMB:270,GEO:268,DEU:276,GHA:288,GIB:292,GRC:300,GRL:304,GRD:308,GLP:312,GUM:316,GTM:320,GIN:324,GNB:624,GUY:328,HTI:332,HMD:334,VAT:336,HND:340,HKG:344,HUN:348,ISL:352,IND:356,IDN:360,IRN:364,IRQ:368,IRL:372,ISR:376,ITA:380,JAM:388,JPN:392,JOR:400,KAZ:398,KEN:404,KIR:296,PRK:408,KOR:410,KWT:414,KGZ:417,LAO:418,LVA:428,LBN:422,LSO:426,LBR:430,LBY:434,LIE:438,LTU:440,LUX:442,MAC:446,MDG:450,MWI:454,MYS:458,MDV:462,MLI:466,MLT:470,MHL:584,MTQ:474,MRT:478,MUS:480,MYT:175,MEX:484,FSM:583,MDA:498,MCO:492,MNG:496,MSR:500,MAR:504,MOZ:508,MMR:104,NAM:516,NRU:520,NPL:524,NLD:528,NCL:540,NZL:554,NIC:558,NER:562,NGA:566,NIU:570,NFK:574,MNP:580,MKD:807,NOR:578,OMN:512,PAK:586,PLW:585,PSE:275,PAN:591,PNG:598,PRY:600,PER:604,PHL:608,PCN:612,POL:616,PRT:620,PRI:630,QAT:634,REU:638,ROU:642,RUS:643,RWA:646,SHN:654,KNA:659,LCA:662,SPM:666,VCT:670,WSM:882,SMR:674,STP:678,SAU:682,SEN:686,SYC:690,SLE:694,SGP:702,SVK:703,SVN:705,SLB:90,SOM:706,ZAF:710,SGS:239,ESP:724,LKA:144,SDN:729,SUR:740,SJM:744,SWZ:748,SWE:752,CHE:756,SYR:760,TWN:158,TJK:762,TZA:834,THA:764,TLS:626,TGO:768,TKL:772,TON:776,TTO:780,TUN:788,TUR:792,TKM:795,TCA:796,TUV:798,UGA:800,UKR:804,ARE:784,GBR:826,USA:840,UMI:581,URY:858,UZB:860,VUT:548,VEN:862,VNM:704,VGB:92,VIR:850,WLF:876,ESH:732,YEM:887,ZMB:894,ZWE:716,ALA:248,BES:535,CUW:531,GGY:831,IMN:833,JEY:832,MNE:499,BLM:652,MAF:663,SRB:688,SXM:534,SSD:728,XKK:983".split(",").map(s => { const [a, n] = s.split(":"); return [a, n.padStart(3, "0")]; }));
+const CODES = "AFG:AF:4,ALB:AL:8,DZA:DZ:12,ASM:AS:16,AND:AD:20,AGO:AO:24,AIA:AI:660,ATA:AQ:10,ATG:AG:28,ARG:AR:32,ARM:AM:51,ABW:AW:533,AUS:AU:36,AUT:AT:40,AZE:AZ:31,BHS:BS:44,BHR:BH:48,BGD:BD:50,BRB:BB:52,BLR:BY:112,BEL:BE:56,BLZ:BZ:84,BEN:BJ:204,BMU:BM:60,BTN:BT:64,BOL:BO:68,BIH:BA:70,BWA:BW:72,BVT:BV:74,BRA:BR:76,IOT:IO:86,BRN:BN:96,BGR:BG:100,BFA:BF:854,BDI:BI:108,KHM:KH:116,CMR:CM:120,CAN:CA:124,CPV:CV:132,CYM:KY:136,CAF:CF:140,TCD:TD:148,CHL:CL:152,CHN:CN:156,CXR:CX:162,CCK:CC:166,COL:CO:170,COM:KM:174,COG:CG:178,COD:CD:180,COK:CK:184,CRI:CR:188,CIV:CI:384,HRV:HR:191,CUB:CU:192,CYP:CY:196,CZE:CZ:203,DNK:DK:208,DJI:DJ:262,DMA:DM:212,DOM:DO:214,ECU:EC:218,EGY:EG:818,SLV:SV:222,GNQ:GQ:226,ERI:ER:232,EST:EE:233,ETH:ET:231,FLK:FK:238,FRO:FO:234,FJI:FJ:242,FIN:FI:246,FRA:FR:250,GUF:GF:254,PYF:PF:258,ATF:TF:260,GAB:GA:266,GMB:GM:270,GEO:GE:268,DEU:DE:276,GHA:GH:288,GIB:GI:292,GRC:GR:300,GRL:GL:304,GRD:GD:308,GLP:GP:312,GUM:GU:316,GTM:GT:320,GIN:GN:324,GNB:GW:624,GUY:GY:328,HTI:HT:332,HMD:HM:334,VAT:VA:336,HND:HN:340,HKG:HK:344,HUN:HU:348,ISL:IS:352,IND:IN:356,IDN:ID:360,IRN:IR:364,IRQ:IQ:368,IRL:IE:372,ISR:IL:376,ITA:IT:380,JAM:JM:388,JPN:JP:392,JOR:JO:400,KAZ:KZ:398,KEN:KE:404,KIR:KI:296,PRK:KP:408,KOR:KR:410,KWT:KW:414,KGZ:KG:417,LAO:LA:418,LVA:LV:428,LBN:LB:422,LSO:LS:426,LBR:LR:430,LBY:LY:434,LIE:LI:438,LTU:LT:440,LUX:LU:442,MAC:MO:446,MDG:MG:450,MWI:MW:454,MYS:MY:458,MDV:MV:462,MLI:ML:466,MLT:MT:470,MHL:MH:584,MTQ:MQ:474,MRT:MR:478,MUS:MU:480,MYT:YT:175,MEX:MX:484,FSM:FM:583,MDA:MD:498,MCO:MC:492,MNG:MN:496,MSR:MS:500,MAR:MA:504,MOZ:MZ:508,MMR:MM:104,NAM:NA:516,NRU:NR:520,NPL:NP:524,NLD:NL:528,NCL:NC:540,NZL:NZ:554,NIC:NI:558,NER:NE:562,NGA:NG:566,NIU:NU:570,NFK:NF:574,MNP:MP:580,MKD:MK:807,NOR:NO:578,OMN:OM:512,PAK:PK:586,PLW:PW:585,PSE:PS:275,PAN:PA:591,PNG:PG:598,PRY:PY:600,PER:PE:604,PHL:PH:608,PCN:PN:612,POL:PL:616,PRT:PT:620,PRI:PR:630,QAT:QA:634,REU:RE:638,ROU:RO:642,RUS:RU:643,RWA:RW:646,SHN:SH:654,KNA:KN:659,LCA:LC:662,SPM:PM:666,VCT:VC:670,WSM:WS:882,SMR:SM:674,STP:ST:678,SAU:SA:682,SEN:SN:686,SYC:SC:690,SLE:SL:694,SGP:SG:702,SVK:SK:703,SVN:SI:705,SLB:SB:90,SOM:SO:706,ZAF:ZA:710,SGS:GS:239,ESP:ES:724,LKA:LK:144,SDN:SD:729,SUR:SR:740,SJM:SJ:744,SWZ:SZ:748,SWE:SE:752,CHE:CH:756,SYR:SY:760,TWN:TW:158,TJK:TJ:762,TZA:TZ:834,THA:TH:764,TLS:TL:626,TGO:TG:768,TKL:TK:772,TON:TO:776,TTO:TT:780,TUN:TN:788,TUR:TR:792,TKM:TM:795,TCA:TC:796,TUV:TV:798,UGA:UG:800,UKR:UA:804,ARE:AE:784,GBR:GB:826,USA:US:840,UMI:UM:581,URY:UY:858,UZB:UZ:860,VUT:VU:548,VEN:VE:862,VNM:VN:704,VGB:VG:92,VIR:VI:850,WLF:WF:876,ESH:EH:732,YEM:YE:887,ZMB:ZM:894,ZWE:ZW:716,ALA:AX:248,BES:BQ:535,CUW:CW:531,GGY:GG:831,IMN:IM:833,JEY:JE:832,MNE:ME:499,BLM:BL:652,MAF:MF:663,SRB:RS:688,SXM:SX:534,SSD:SS:728,XKK:XK:983".split(",").map(x => x.split(":"));
+const ISO = Object.fromEntries(CODES.map(([a3, , n]) => [a3, n.padStart(3, "0")]));
+// 숫자코드 → 영문 국가명 (브라우저 내장 Intl)
+const A2 = Object.fromEntries(CODES.map(([, a2, n]) => [n.padStart(3, "0"), a2]));
+const enName = (() => { try { const dn = new Intl.DisplayNames(["en"], { type: "region" }); return a2 => a2 && dn.of(a2); } catch { return () => null; } })();
 // Natural Earth 분할 영역 → 소속국
 const ALIAS = { "Somaliland": "706", "N. Cyprus": "196" };
 
@@ -98,6 +103,7 @@ Promise.all([
   const byId = new Map();
   const unmatched = [];
   rows.forEach(r => ISO[r.iso3] ? byId.set(ISO[r.iso3], r) : unmatched.push(r.name));
+  rows.forEach(r => r.label = enName(A2[ISO[r.iso3]]) || r.name); // 화면 표시는 영문
   if (unmatched.length) console.warn("ISO3 매칭 실패:", unmatched);
 
   const date = d3.csvParseRows(asof)[0]?.[0];
@@ -132,16 +138,18 @@ Promise.all([
     { type: "Polygon", coordinates: d3.greatest(d.geometry.coordinates, c => d3.geoArea({ type: "Polygon", coordinates: c })) };
   const labels = g.append("g").attr("class", "labels").selectAll("text")
     .data(land.filter(d => d.row).map(d => ({ d, c: path.centroid(main(d)), a: path.area(main(d)) })))
-    .join("text").attr("class", "label").text(x => x.d.row.name)
+    .join("text").attr("class", "label").text(x => x.d.row.label)
     .attr("x", x => x.c[0]).attr("y", x => x.c[1]);
 
   // 툴팁
   const tip = d3.select(host).append("div").attr("class", "tip");
-  g.selectAll(".country.on, .dot")
+  g.selectAll(".country, .dot")
     .on("mousemove", (e, d) => {
       const [x, y] = d3.pointer(e, host);
+      const name = d.row ? d.row.label : enName(A2[d.key]) || d.properties.name;
+      const status = d.row ? d.row.status : d.key === HOME ? "본사" : "미진출";
       tip.style("left", x + "px").style("top", y + "px").style("opacity", 1)
-        .html(`<b>${d.row.name}</b> · ${d.row.status}${d.row.note ? "<br>" + d.row.note : ""}`);
+        .html(`<b>${name}</b> · ${status}${d.row && d.row.note ? "<br>" + d.row.note : ""}`);
     })
     .on("mouseleave", () => tip.style("opacity", 0));
 
@@ -153,7 +161,7 @@ Promise.all([
       STATUS.map(s => `<span><i style="background:${s.color}"></i>${s.key}<b>${count.get(s.key) || 0}</b></span>`).join("") +
       `<span><i style="background:var(--land)"></i>미진출</span><span><i style="background:#fff;border:1.4px solid var(--home)"></i>본사(한국)</span>`;
     document.getElementById("list").innerHTML = STATUS.filter(s => count.get(s.key))
-      .map(s => `<div><b>${s.key}</b>${inReg.filter(r => r.status === s.key).map(r => r.name).join(", ")}</div>`).join("");
+      .map(s => `<div><b>${s.key}</b>${inReg.filter(r => r.status === s.key).map(r => r.label).join(", ")}</div>`).join("");
   }
 
   // 권역 줌
