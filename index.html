@@ -22,6 +22,10 @@
   .pills button { font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line);
     background: #fff; color: var(--ink); cursor: pointer; }
   .pills button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 600; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .sheet { font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--s1); color: var(--s1);
+    background: #fff; text-decoration: none; font-weight: 600; white-space: nowrap; }
+  .sheet:hover { background: var(--s1); color: #fff; }
   .map { position: relative; margin-top: 10px; }
   svg { width: 100%; height: auto; display: block; }
   .country { stroke: var(--border); stroke-width: .5; vector-effect: non-scaling-stroke; transition: opacity .15s; }
@@ -47,7 +51,10 @@
 <div class="card">
   <header>
     <h1>해외 진출 현황<small id="sub">불러오는 중…</small></h1>
-    <div class="pills" id="pills"></div>
+    <div class="tools">
+      <div class="pills" id="pills"></div>
+      <a class="sheet" href="https://docs.google.com/spreadsheets/d/123KpTAZmVN0d9cfxez07Or0kFTmVBSa2aMfcozmOuBw/edit#gid=1114895925" target="_blank" rel="noopener">시트 열기 ↗</a>
+    </div>
   </header>
   <div class="map" id="map"><div class="msg">지도를 불러오는 중…</div></div>
   <div class="legend" id="legend"></div>
