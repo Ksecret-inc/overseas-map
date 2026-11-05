@@ -28,6 +28,8 @@
   .country.on:hover, .dot:hover { opacity: .75; cursor: pointer; }
   .dot { stroke: #fff; stroke-width: 1; vector-effect: non-scaling-stroke; }
   .home { stroke: var(--home); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+  .label { fill: var(--ink); font-weight: 600; text-anchor: middle; dominant-baseline: central; pointer-events: none;
+    stroke: rgba(255,255,255,.85); paint-order: stroke; stroke-linejoin: round; }
   .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: 12px; line-height: 1.45;
     padding: 7px 10px; border-radius: 8px; white-space: nowrap; opacity: 0; transform: translate(-50%, calc(-100% - 12px)); transition: opacity .1s; }
   .tip b { font-weight: 700; }
@@ -118,6 +120,14 @@ Promise.all([
     .attr("cx", d => projection(d3.geoCentroid(d))[0]).attr("cy", d => projection(d3.geoCentroid(d))[1])
     .attr("fill", d => colorOf(d.row.status));
 
+  // 국가명: 본토(가장 큰 폴리곤) 중심에 표시, 확대했을 때 들어갈 만큼 큰 나라만 노출
+  const main = d => d.geometry.type !== "MultiPolygon" ? d.geometry :
+    { type: "Polygon", coordinates: d3.greatest(d.geometry.coordinates, c => d3.geoArea({ type: "Polygon", coordinates: c })) };
+  const labels = g.append("g").attr("class", "labels").selectAll("text")
+    .data(land.filter(d => d.row).map(d => ({ d, c: path.centroid(main(d)), a: path.area(main(d)) })))
+    .join("text").attr("class", "label").text(x => x.d.row.name)
+    .attr("x", x => x.c[0]).attr("y", x => x.c[1]);
+
   // 툴팁
   const tip = d3.select(host).append("div").attr("class", "tip");
   g.selectAll(".country.on, .dot")
@@ -146,8 +156,6 @@ Promise.all([
     let k = 1, tx = 0, ty = 0;
     if (reg !== "전체") {
       // 해외 영토(프랑스령 기아나, 알래스카 등)에 끌려가지 않도록 국가별 가장 큰 폴리곤만으로 범위 계산
-      const main = d => d.geometry.type !== "MultiPolygon" ? d.geometry :
-        { type: "Polygon", coordinates: d3.greatest(d.geometry.coordinates, c => d3.geoArea({ type: "Polygon", coordinates: c })) };
       const feats = land.filter(d => d.row && d.row.region === reg).map(main);
       if (!feats.length) { region = reg; legend(); return; }
       const [[x0, y0], [x1, y1]] = path.bounds({ type: "GeometryCollection", geometries: feats });
@@ -156,6 +164,18 @@ Promise.all([
     }
     g.transition().duration(650).attr("transform", `translate(${tx},${ty}) scale(${k})`);
     g.selectAll(".dot").transition().duration(650).attr("r", 3.2 / Math.sqrt(k));
+    // 화면 기준 글자 크기 고정, 화면상 면적이 충분한 나라만 표시 (권역 확대 시 작은 나라도 노출)
+    labels.style("font-size", (9.5 / k) + "px").style("stroke-width", (2.6 / k) + "px")
+      .style("display", x => x.a * k * k > 380 && (reg === "전체" || x.d.row.region === reg) ? null : "none");
+    // 겹치면 큰 나라 우선, 작은 나라 이름 숨김
+    const placed = [];
+    labels.filter(function () { return this.style.display !== "none"; }).nodes()
+      .sort((p, q) => d3.select(q).datum().a - d3.select(p).datum().a)
+      .forEach(n => {
+        const b = n.getBBox();
+        if (placed.some(o => b.x < o.x + o.width && o.x < b.x + b.width && b.y < o.y + o.height && o.y < b.y + b.height)) n.style.display = "none";
+        else placed.push(b);
+      });
     legend();
   }
   d3.select("#pills").selectAll("button").data(REGIONS).join("button").text(d => d).on("click", (e, d) => zoomTo(d));
